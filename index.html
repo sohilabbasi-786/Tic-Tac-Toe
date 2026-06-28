@@ -1,152 +1,217 @@
-<title>Tic Tac Toe</title>
-<meta charset="UTF-8" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Tic Tac Toe</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-  body,
-  td,
-  input {
-    font-size: 24px;
-    line-height: 1.5;
-    text-align: center;
-    font-family: system-ui, sans-serif;
-  }
-  td {
-    height: 3rem;
-    width: 3rem;
-    text-align: center;
-  }
-  table {
-    margin: 5rem auto;
-  }
-  @media (prefers-color-scheme: dark) {
-    body,
-    input {
-      background: #222;
-      color: #ccc;
+  <style>
+    /* Page background and font */
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      padding: 30px;
     }
-  }
-</style>
 
-<h1>Tic Tac Toe</h1>
-
-<table>
-  <tr>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-  </tr>
-  <tr>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-  </tr>
-  <tr>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-    <td><input type="checkbox" /></td>
-  </tr>
-</table>
-
-<h2 hidden>Game over, refresh to play again 🧑‍💻 🤖!</h2>
-
-<script>
-  // Initialization of code
-  const boxes = Array.from(document.querySelectorAll("td"));
-  const inputs = Array.from(document.querySelectorAll("[type=checkbox]"));
-  const rows = [1, 2, 3].map((n) =>
-    Array.from(document.querySelectorAll(`tr:nth-child(${n}) td`))
-  );
-  const columns = [1, 2, 3].map((n) =>
-    Array.from(document.querySelectorAll(`td:nth-child(${n})`))
-  );
-  const diagonals = [
-    [
-      [1, 1],
-      [2, 2],
-      [3, 3],
-    ],
-    [
-      [3, 1],
-      [2, 2],
-      [1, 3],
-    ],
-  ].map((set) =>
-    set.map(([x, y]) =>
-      document.querySelector(`tr:nth-child(${x}) td:nth-child(${y})`)
-    )
-  );
-  const gameOver = document.querySelector("h2");
-  const HUMAN = "🧑‍💻";
-  const ROBOT = "🤖";
-
-  // Decide who goes first
-  if (Math.random() > 0.5) {
-    runRobotTurn();
-  }
-
-  // Handle when a user clicks an input
-  for (const input of inputs) {
-    input.addEventListener("click", handleClickInput);
-  }
-
-  // The user chose a box, check for win, robot turn, check for win
-  function handleClickInput(evt) {
-    evt.target.closest("td").innerHTML = HUMAN;
-    if (hasWin()) {
-      return endGame();
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
     }
-    runRobotTurn();
-    if (hasWin()) {
-      return endGame();
-    }
-  }
 
-  // Choose a random available box
-  function runRobotTurn() {
-    const robotBoxes = shuffle(boxes);
-    while (robotBoxes.length) {
-      const box = robotBoxes.shift();
-      if (box.querySelector("input")) {
-        box.innerHTML = ROBOT;
-        break;
+    /* The 3x3 grid */
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+
+    td {
+      width: 100px;
+      height: 100px;
+      font-size: 2.5rem;
+      border: 3px solid #333;
+      cursor: pointer;
+      background-color: white;
+    }
+
+    /* Change cell color when hovered */
+    td:hover {
+      background-color: #e8e8ff;
+    }
+
+    /* Message shown at the end */
+    #message {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin: 15px 0;
+      color: #333;
+    }
+
+    /* Restart button */
+    #restartBtn {
+      font-size: 1rem;
+      padding: 10px 25px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #restartBtn:hover {
+      background-color: #3730a3;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tic Tac Toe</h1>
+  <p>You = 🧑‍💻 &nbsp;|&nbsp; Robot = 🤖</p>
+
+  <!-- Game board -->
+  <table>
+    <tr>
+      <td onclick="humanClick(0)"></td>
+      <td onclick="humanClick(1)"></td>
+      <td onclick="humanClick(2)"></td>
+    </tr>
+    <tr>
+      <td onclick="humanClick(3)"></td>
+      <td onclick="humanClick(4)"></td>
+      <td onclick="humanClick(5)"></td>
+    </tr>
+    <tr>
+      <td onclick="humanClick(6)"></td>
+      <td onclick="humanClick(7)"></td>
+      <td onclick="humanClick(8)"></td>
+    </tr>
+  </table>
+
+  <!-- Status message -->
+  <div id="message">Your turn!</div>
+
+  <!-- Restart button -->
+  <button id="restartBtn" onclick="restartGame()">🔄 Restart</button>
+
+  <script>
+    // All 9 cells stored in an array
+    var cells = document.querySelectorAll("td");
+
+    // board[] stores who filled each cell: null = empty, "H" = human, "R" = robot
+    var board = [null, null, null, null, null, null, null, null, null];
+
+    // Is the game still going?
+    var gameActive = true;
+
+    // All winning combinations (by index)
+    var winLines = [
+      [0, 1, 2], // top row
+      [3, 4, 5], // middle row
+      [6, 7, 8], // bottom row
+      [0, 3, 6], // left column
+      [1, 4, 7], // middle column
+      [2, 5, 8], // right column
+      [0, 4, 8], // diagonal
+      [2, 4, 6]  // diagonal
+    ];
+
+    // Called when human clicks a cell
+    function humanClick(index) {
+      // Ignore if game over or cell already taken
+      if (!gameActive || board[index] !== null) return;
+
+      // Mark the cell
+      board[index] = "H";
+      cells[index].textContent = "🧑‍💻";
+
+      // Check if human won
+      if (checkWinner("H")) {
+        showMessage("🎉 You win!");
+        gameActive = false;
+        return;
       }
+
+      // Check draw
+      if (isBoardFull()) {
+        showMessage("🤝 It's a draw!");
+        gameActive = false;
+        return;
+      }
+
+      // Robot's turn
+      showMessage("🤖 Robot is thinking...");
+      setTimeout(robotTurn, 500);
     }
-  }
 
-  // Determine win
-  function hasWin() {
-    return (
-      rows.some(hasAllSame) ||
-      columns.some(hasAllSame) ||
-      diagonals.some(hasAllSame)
-    );
-  }
+    // Robot picks a random empty cell
+    function robotTurn() {
+      // Find all empty cells
+      var emptyCells = [];
+      for (var i = 0; i < board.length; i++) {
+        if (board[i] === null) {
+          emptyCells.push(i);
+        }
+      }
 
-  // Determine if every cell matches
-  function hasAllSame(arr) {
-    return arr.every(
-      (td) => !td.querySelector("input") && td.innerHTML === arr[0].innerHTML
-    );
-  }
+      // Pick one randomly
+      var pick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      board[pick] = "R";
+      cells[pick].textContent = "🤖";
 
-  // Display game over, cancel events
-  function endGame() {
-    gameOver.hidden = false;
-    for (const input of inputs) {
-      input.removeEventListener("click", handleClickInput);
-      input.remove();
+      // Check if robot won
+      if (checkWinner("R")) {
+        showMessage("🤖 Robot wins!");
+        gameActive = false;
+        return;
+      }
+
+      // Check draw
+      if (isBoardFull()) {
+        showMessage("🤝 It's a draw!");
+        gameActive = false;
+        return;
+      }
+
+      showMessage("Your turn!");
     }
-  }
 
-  // Shuffle a copy of the input array
-  function shuffle(array) {
-    array = array.slice(0);
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * i);
-      const temp = array[i];
-      array[i] = array[j];
-      array[j] = temp;
+    // Check if a player has won
+    function checkWinner(player) {
+      for (var i = 0; i < winLines.length; i++) {
+        var a = winLines[i][0];
+        var b = winLines[i][1];
+        var c = winLines[i][2];
+        if (board[a] === player && board[b] === player && board[c] === player) {
+          return true;
+        }
+      }
+      return false;
     }
-    return array;
-  }
-</script>
+
+    // Check if all cells are filled
+    function isBoardFull() {
+      for (var i = 0; i < board.length; i++) {
+        if (board[i] === null) return false;
+      }
+      return true;
+    }
+
+    // Show a message on screen
+    function showMessage(text) {
+      document.getElementById("message").textContent = text;
+    }
+
+    // Reset everything
+    function restartGame() {
+      board = [null, null, null, null, null, null, null, null, null];
+      gameActive = true;
+      for (var i = 0; i < cells.length; i++) {
+        cells[i].textContent = "";
+      }
+      showMessage("Your turn!");
+    }
+  </script>
+
+</body>
+</html>
