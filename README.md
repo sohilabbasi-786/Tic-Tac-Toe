@@ -8,7 +8,7 @@ A simple Tic Tac Toe game built using HTML, CSS, and JavaScript.
 - Draw detection
 - Reset Game
 
-## Technologies
+## Using Lang
 - HTML
 - CSS
 - JavaScript
